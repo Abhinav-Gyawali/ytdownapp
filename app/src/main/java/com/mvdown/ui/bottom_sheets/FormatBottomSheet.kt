@@ -7,14 +7,14 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mvdown.Format
 import com.mvdown.R
+import com.mvdown.models.VideoFormat
 import com.mvdown.ui.adapters.FormatsAdapter
 
 class FormatBottomSheet : BottomSheetDialogFragment() {
     private lateinit var rvFormats: RecyclerView
     private lateinit var adapter: FormatsAdapter
-    private var formats: List<Format> = emptyList()
+    private var formats: List<VideoFormat> = emptyList()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,7 +36,7 @@ class FormatBottomSheet : BottomSheetDialogFragment() {
         rvFormats.adapter = adapter
     }
 
-    fun setFormats(formats: List<Format>) {
+    fun setFormats(formats: List<VideoFormat>) {
         this.formats = formats
         if (::adapter.isInitialized) {
             adapter.updateFormats(formats)
@@ -44,18 +44,10 @@ class FormatBottomSheet : BottomSheetDialogFragment() {
     }
 
     companion object {
-        fun newInstance(formats: List<Format>): FormatBottomSheet {
+        fun newInstance(formats: List<VideoFormat>): FormatBottomSheet {
             return FormatBottomSheet().apply {
                 setFormats(formats)
             }
         }
     }
 }
-
-            }            }
-
-        }        }
-
-    }    }
-
-}}

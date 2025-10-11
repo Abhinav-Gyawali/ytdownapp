@@ -50,7 +50,8 @@ class MainActivity : AppCompatActivity() {
                 val response = ApiClient.service.getFormats(request)
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val formats = response.body()!!
+                    val formatResponse = response.body()!!
+                    val formats = formatResponse.videoFormats
                     FormatBottomSheet.newInstance(formats)
                         .show(supportFragmentManager, "FormatBottomSheet")
                 } else {
