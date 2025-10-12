@@ -18,7 +18,7 @@ class DownloadWebSocketManager(private val baseUrl: String) {
     
     fun connect(downloadId: String): Flow<DownloadEvent> {
         val wsUrl = baseUrl.replace("http://", "ws://")
-            .replace("https://", "wss://") + "ws/$downloadId"
+            .replace("https://", "wss://") + "/ws/$downloadId"
         
         val request = Request.Builder()
             .url(wsUrl)

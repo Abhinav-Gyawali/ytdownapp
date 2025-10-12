@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
     
     // Update this to your backend URL
-    private const val BASE_URL = "https://ytdownbackend.onrender.com/"
+    const val BASE_URL = "https://ytdownbackend.onrender.com/"
     
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
