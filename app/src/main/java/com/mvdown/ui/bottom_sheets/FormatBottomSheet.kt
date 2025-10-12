@@ -50,6 +50,10 @@ class FormatBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun startDownload(format: VideoFormat) {
+        println("🎬 Starting download...")
+        println("📝 URL: $url")
+        println("📝 Format ID: ${format.formatId}")
+        
         dismiss()
         
         progressDialog = DownloadProgressDialog(requireContext()).apply {
@@ -60,12 +64,17 @@ class FormatBottomSheet : BottomSheetDialogFragment() {
     }
     
     private fun observeDownloadEvents() {
+        println("👀 Observing download events...")
         downloadManager.downloadEvent.observe(viewLifecycleOwner) { event ->
             when (event) {
                 is DownloadEvent.Progress -> {
+                    println("📊 Progress - Status: ${event.status}, Percent: ${event.percent}")
                     progressDialog?.updateProgress(event)
                 }
                 is DownloadEvent.Done -> {
+                    println("✅ Download completed!")
+                    println("📝 Title: ${event.title}")
+                    println("📝 Filename: ${event.filename}")
                     progressDialog?.dismiss()
                     Toast.makeText(
                         requireContext(),
@@ -75,6 +84,7 @@ class FormatBottomSheet : BottomSheetDialogFragment() {
                     downloadManager.disconnect()
                 }
                 is DownloadEvent.Error -> {
+                    println("❌ Download error: ${event.error}")
                     progressDialog?.dismiss()
                     Toast.makeText(
                         requireContext(),

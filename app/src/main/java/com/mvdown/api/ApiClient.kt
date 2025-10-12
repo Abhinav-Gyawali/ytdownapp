@@ -11,6 +11,11 @@ object ApiClient {
     // Update this to your backend URL
     const val BASE_URL = "https://ytdownbackend.onrender.com/"
     
+    init {
+        println("🌐 Initialized ApiClient")
+        println("🌐 BASE_URL: $BASE_URL")
+    }
+    
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }

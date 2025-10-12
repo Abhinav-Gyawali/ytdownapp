@@ -17,15 +17,27 @@ class DownloadWebSocketManager(private val baseUrl: String) {
     private val eventChannel = Channel<DownloadEvent>(Channel.BUFFERED)
     
     fun connect(downloadId: String): Flow<DownloadEvent> {
-        val wsUrl = baseUrl.replace("http://", "ws://")
-            .replace("https://", "wss://") + "/ws/$downloadId"
+        // Ensure clean URL building with proper slash handling
+        val wsUrl = baseUrl
+            .replace("http://", "ws://")
+            .replace("https://", "wss://")
+            .removeSuffix("/") + "/ws/$downloadId"
+        
+        // Debug logging
+        println("🔌 Connecting to WebSocket: $wsUrl")
+        println("📝 Download ID: $downloadId")
         
         val request = Request.Builder()
             .url(wsUrl)
             .build()
         
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                println("✅ WebSocket connected successfully!")
+            }
+            
             override fun onMessage(webSocket: WebSocket, text: String) {
+                println("📩 WebSocket message: $text")
                 try {
                     val json = gson.fromJson(text, JsonObject::class.java)
                     val event = json.get("event")?.asString
@@ -56,12 +68,19 @@ class DownloadWebSocketManager(private val baseUrl: String) {
                         }
                     }
                 } catch (e: Exception) {
+                    println("❌ Error parsing message: ${e.message}")
                     eventChannel.trySend(DownloadEvent.Error(e.message ?: "Parse error"))
                 }
             }
             
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                println("❌ WebSocket failed: ${t.message}")
+                println("❌ Response: ${response?.code} ${response?.message}")
                 eventChannel.trySend(DownloadEvent.Error(t.message ?: "Connection failed"))
+            }
+            
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                println("🔌 WebSocket closed: $code - $reason")
             }
         })
         

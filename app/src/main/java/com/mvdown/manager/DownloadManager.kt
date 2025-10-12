@@ -19,28 +19,44 @@ class DownloadManager(private val context: Context) {
     val downloadEvent: LiveData<DownloadEvent> = _downloadEvent
     
     fun startDownload(url: String, formatId: String, scope: CoroutineScope) {
+        // Send initial "processing" event
+        _downloadEvent.postValue(
+            DownloadEvent.Progress(
+                status = "starting",
+                message = "Initiating download..."
+            )
+        )
+        
         scope.launch(Dispatchers.IO) {
             try {
-                // Step 1: Initiate download
+                // Step 1: Initiate download and get download_id
                 val request = DownloadRequest(url, formatId)
                 val response = ApiClient.service.initiateDownload(request)
+                
+                println("Response code: ${response.code()}")
+                println("Response body: ${response.body()}")
                 
                 if (response.isSuccessful && response.body() != null) {
                     val downloadResponse = response.body()!!
                     val downloadId = downloadResponse.downloadId
                     
-                    // Step 2: Connect WebSocket for progress
-                    scope.launch(Dispatchers.IO) {
-                        wsManager.connect(downloadId).collect { event ->
-                            _downloadEvent.postValue(event)
-                        }
+                    // Log for debugging
+                    println("✅ Download initiated! ID: $downloadId")
+                    
+                    // Step 2: Connect WebSocket with the download_id
+                    wsManager.connect(downloadId).collect { event ->
+                        _downloadEvent.postValue(event)
                     }
                 } else {
+                    val errorBody = response.errorBody()?.string() ?: "Unknown error"
+                    println("❌ Download initiation failed: ${response.code()} - $errorBody")
                     _downloadEvent.postValue(
-                        DownloadEvent.Error(response.errorBody()?.string() ?: "Unknown error")
+                        DownloadEvent.Error("Failed to start download: ${response.code()} - $errorBody")
                     )
                 }
             } catch (e: Exception) {
+                e.printStackTrace()
+                println("❌ Download error: ${e.message}")
                 _downloadEvent.postValue(
                     DownloadEvent.Error(e.message ?: "Unknown error")
                 )
