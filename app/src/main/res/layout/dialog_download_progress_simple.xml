@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="24dp"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="28dp"
     app:cardElevation="8dp">
 
     <LinearLayout
@@ -14,54 +14,64 @@
         android:orientation="vertical"
         android:padding="24dp">
 
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/loadingAnimation"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_rawRes="@raw/download_animation"/>
+
         <TextView
             android:id="@+id/tvDownloadTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Processing your request..."
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/black"
+            android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
             android:layout_marginBottom="16dp"/>
 
-        <ProgressBar
+        <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/downloadProgress"
-            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:max="100"
-            android:progress="0"
-            android:layout_marginBottom="12dp"/>
+            android:layout_marginBottom="12dp"
+            app:trackCornerRadius="8dp"
+            app:trackThickness="8dp"/>
 
         <TextView
             android:id="@+id/tvProgress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0%"
-            android:textSize="14sp"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_gravity="center_horizontal"
             android:layout_marginBottom="8dp"/>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center">
 
             <TextView
                 android:id="@+id/tvSpeed"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="Speed: --"
-                android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"/>
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginEnd="16dp"/>
 
             <TextView
                 android:id="@+id/tvEta"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="ETA: --"
-                android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"/>
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"/>
         </LinearLayout>
 
     </LinearLayout>

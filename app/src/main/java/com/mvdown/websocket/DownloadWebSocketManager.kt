@@ -8,16 +8,28 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import okhttp3.*
 import okio.ByteString
+import java.util.concurrent.TimeUnit
 
 class DownloadWebSocketManager(private val baseUrl: String) {
     
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .readTimeout(0, TimeUnit.MILLISECONDS) // No timeout for WebSocket
+        .pingInterval(30, TimeUnit.SECONDS) // Keep connection alive
+        .build()
+        
     private var webSocket: WebSocket? = null
     private val gson = Gson()
     private val eventChannel = Channel<DownloadEvent>(Channel.BUFFERED)
     
+    init {
+        println("🔌 WebSocketManager initialized")
+    }
+    
     fun connect(downloadId: String): Flow<DownloadEvent> {
-        // Ensure clean URL building with proper slash handling
+        // First disconnect any existing connection
+        disconnect()
+        
+        // Build WebSocket URL
         val wsUrl = baseUrl
             .replace("http://", "ws://")
             .replace("https://", "wss://")

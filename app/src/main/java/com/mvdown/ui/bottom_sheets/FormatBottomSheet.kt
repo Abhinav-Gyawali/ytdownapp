@@ -53,11 +53,13 @@ class FormatBottomSheet : BottomSheetDialogFragment() {
         println("🎬 Starting download...")
         println("📝 URL: $url")
         println("📝 Format ID: ${format.formatId}")
-        
-        dismiss()
-        
+                
         progressDialog = DownloadProgressDialog(requireContext()).apply {
             show()
+            setOnCancelListener {
+                downloadManager.disconnect()
+                adapter.notifyDataSetChanged() // Re-enable download buttons
+            }
         }
         
         downloadManager.startDownload(url, format.formatId, lifecycleScope)
