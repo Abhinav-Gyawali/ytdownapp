@@ -1,22 +1,29 @@
 package com.mvdown.manager
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.mvdown.api.ApiClient
 import com.mvdown.models.DownloadEvent
 import com.mvdown.models.DownloadRequest
-import com.mvdown.websocket.DownloadWebSocketManager
+import com.mvdown.sse.SSEManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 
 class DownloadManager(private val context: Context) {
     
-    private val wsManager = DownloadWebSocketManager(ApiClient.BASE_URL)
     private val _downloadEvent = MutableLiveData<DownloadEvent>()
     val downloadEvent: LiveData<DownloadEvent> = _downloadEvent
+    
+    private var sseManager: SSEManager? = null
+    
+    companion object {
+        private const val TAG = "DownloadManager"
+    }
     
     fun startDownload(url: String, formatId: String, scope: CoroutineScope) {
         // Send initial "processing" event
@@ -33,30 +40,36 @@ class DownloadManager(private val context: Context) {
                 val request = DownloadRequest(url, formatId)
                 val response = ApiClient.service.initiateDownload(request)
                 
-                println("Response code: ${response.code()}")
-                println("Response body: ${response.body()}")
+                Log.d(TAG, "Response code: ${response.code()}")
+                Log.d(TAG, "Response body: ${response.body()}")
                 
                 if (response.isSuccessful && response.body() != null) {
                     val downloadResponse = response.body()!!
                     val downloadId = downloadResponse.downloadId
                     
-                    // Log for debugging
-                    println("✅ Download initiated! ID: $downloadId")
+                    Log.d(TAG, "✅ Download initiated! ID: $downloadId")
                     
-                    // Step 2: Connect WebSocket with the download_id
-                    wsManager.connect(downloadId).collect { event ->
-                        _downloadEvent.postValue(event)
-                    }
+                    // Step 2: Connect SSE with the download_id
+                    sseManager = SSEManager(downloadId)
+                    sseManager?.startListening()
+                        ?.catch { error ->
+                            Log.e(TAG, "SSE error: ${error.message}", error)
+                            _downloadEvent.postValue(
+                                DownloadEvent.Error(error.message ?: "Unknown error")
+                            )
+                        }
+                        ?.collect { event ->
+                            _downloadEvent.postValue(event)
+                        }
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "Unknown error"
-                    println("❌ Download initiation failed: ${response.code()} - $errorBody")
+                    Log.e(TAG, "❌ Download initiation failed: ${response.code()} - $errorBody")
                     _downloadEvent.postValue(
                         DownloadEvent.Error("Failed to start download: ${response.code()} - $errorBody")
                     )
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                println("❌ Download error: ${e.message}")
+                Log.e(TAG, "❌ Download error: ${e.message}", e)
                 _downloadEvent.postValue(
                     DownloadEvent.Error(e.message ?: "Unknown error")
                 )
@@ -65,6 +78,7 @@ class DownloadManager(private val context: Context) {
     }
     
     fun disconnect() {
-        wsManager.disconnect()
+        sseManager?.close()
+        sseManager = null
     }
 }

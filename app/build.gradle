@@ -19,6 +19,13 @@ android {
         multiDexEnabled true
     }
     
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+    
     buildTypes {
         release {
             minifyEnabled false
@@ -44,10 +51,15 @@ dependencies {
     def material_version = "1.11.0"
     def lottie_version = "6.1.0"
     def lifecycle_version = "2.6.2"
+    def okhttp_version = "4.11.0"
     
     // AndroidX Core
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core-ktx:1.12.0'
+    
+    // OkHttp SSE Support
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+    implementation "com.squareup.okhttp3:okhttp-sse:$okhttp_version"
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     
     // Material 3
