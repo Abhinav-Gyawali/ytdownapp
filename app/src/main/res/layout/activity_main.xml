@@ -22,6 +22,7 @@
             app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall"
             app:menu="@menu/main_menu" />
 
+    
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -117,8 +118,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="My Downloads"
+                android:layout_marginBottom="8dp"
                 app:icon="@drawable/ic_downloads"
                 style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnServerFiles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Server Files"
+                app:icon="@drawable/ic_video"
+                style="@style/Widget.Material3.Button.TonalButton" />
 
         </LinearLayout>
 
