@@ -2,6 +2,7 @@ package com.mvdown.sse
 
 import android.util.Log
 import com.google.gson.JsonParser
+import com.mvdown.api.ApiClient
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -9,9 +10,6 @@ import okhttp3.*
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
-import java.io.IOException
-
-import com.mvdown.api.ApiClient
 
 class SSEManager {
 
@@ -43,24 +41,58 @@ class SSEManager {
                 Log.d("SSEManager", "SSE Event received: $data")
                 try {
                     val json = JsonParser.parseString(data).asJsonObject
-
                     val status = json.get("status")?.asString ?: "unknown"
-                    val progress = json.get("progress")?.asInt ?: 0
-                    val downloaded = json.get("downloaded_bytes")?.asLong ?: 0L
-                    val total = json.get("total_bytes")?.asLong ?: 0L
-                    val speed = json.get("speed")?.asString ?: ""
+
+                    Log.d("SSEManager", "Status: $status")
 
                     when (status) {
-                        "done" -> channel.trySend(SSEEvent.Done(json))
-                        "error" -> channel.trySend(SSEEvent.Error(json))
-                        else -> channel.trySend(
-                            SSEEvent.Progress(
-                                progress = progress,
-                                downloadedBytes = downloaded,
-                                totalBytes = total,
-                                speed = speed
+                        "starting" -> {
+                            channel.trySend(
+                                SSEEvent.Progress(
+                                    progress = 0,
+                                    downloadedBytes = 0L,
+                                    totalBytes = 0L,
+                                    speed = "Initializing..."
+                                )
                             )
-                        )
+                        }
+                        "downloading" -> {
+                            val percent = json.get("percent")?.asString?.replace("%", "")?.trim()?.toIntOrNull() ?: 0
+                            val downloaded = json.get("downloaded_bytes")?.asLong ?: 0L
+                            val total = json.get("total_bytes")?.asLong ?: 0L
+                            val speed = json.get("speed")?.asDouble ?: 0.0
+                            val speedMB = speed / (1024 * 1024)
+                            val speedStr = String.format("%.2f MB/s", speedMB)
+
+                            channel.trySend(
+                                SSEEvent.Progress(
+                                    progress = percent,
+                                    downloadedBytes = downloaded,
+                                    totalBytes = total,
+                                    speed = speedStr
+                                )
+                            )
+                        }
+                        "processing", "zipping" -> {
+                            val message = json.get("message")?.asString ?: "Processing..."
+                            channel.trySend(
+                                SSEEvent.Progress(
+                                    progress = 100,
+                                    downloadedBytes = 0L,
+                                    totalBytes = 0L,
+                                    speed = message
+                                )
+                            )
+                        }
+                        "done" -> {
+                            channel.trySend(SSEEvent.Done(json))
+                        }
+                        "error" -> {
+                            channel.trySend(SSEEvent.Error(json))
+                        }
+                        else -> {
+                            Log.w("SSEManager", "Unknown status: $status")
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("SSEManager", "Error parsing SSE data", e)
