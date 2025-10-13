@@ -1,120 +1,96 @@
 package com.mvdown.sse
 
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.mvdown.api.ApiClient
-import com.mvdown.models.DownloadEvent
+import com.google.gson.JsonParser
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
+import okhttp3.*
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
-import java.util.concurrent.TimeUnit
+import java.io.IOException
 
-class SSEManager(private val downloadId: String) {
-    
+class SSEManager {
+
     private val client = OkHttpClient.Builder()
-        .connectTimeout(0, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.SECONDS)
-        .writeTimeout(0, TimeUnit.SECONDS)
+        .connectTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(0, java.util.concurrent.TimeUnit.SECONDS)
         .build()
-    
+
     private var eventSource: EventSource? = null
-    private val gson = Gson()
-    private val eventChannel = Channel<DownloadEvent>(Channel.BUFFERED)
-    
-    fun startListening(): Flow<DownloadEvent> {
-        val sseUrl = "${ApiClient.BASE_URL.removeSuffix("/")}/api/progress/$downloadId"
-        
-        Log.d(TAG, "🔌 Connecting to SSE: $sseUrl")
-        
+
+    fun startListening(downloadId: String): Flow<SSEEvent> {
+        val url = "${ApiClient.BASE_URL.removeSuffix("/")}/api/progress/$downloadId"
+
+        val channel = Channel<SSEEvent>(Channel.BUFFERED)
+
         val request = Request.Builder()
-            .url(sseUrl)
-            .header("Accept", "text/event-stream")
+            .url(url)
+            .addHeader("Accept", "text/event-stream")
             .build()
-        
-        val listener = object : EventSourceListener() {
+
+        eventSource = EventSources.createFactory(client).newEventSource(request, object : EventSourceListener() {
             override fun onOpen(eventSource: EventSource, response: Response) {
-                Log.d("SSEManager", "✅ SSE Connected")
+                Log.d("SSEManager", "SSE connection opened")
+                channel.trySend(SSEEvent.Connected)
             }
-            
-            override fun onEvent(
-                eventSource: EventSource,
-                id: String?,
-                type: String?,
-                data: String
-            ) {
-                Log.d("SSEManager", "📩 SSE Event: $data")
+
+            override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+                Log.d("SSEManager", "SSE Event received: $data")
                 try {
-                    val json = gson.fromJson(data, JsonObject::class.java)
-                    val event = json.get("event")?.asString
-                    
-                    when (event) {
-                        "connected" -> {
-                            Log.d("SSEManager", "🤝 Connection acknowledged")
-                        }
-                        "progress" -> {
-                            val percentStr = json.get("percent")?.asString ?: "0%"
-                            eventChannel.trySend(DownloadEvent.Progress(
-                                status = json.get("status")?.asString ?: "downloading",
-                                percent = percentStr,
-                                downloadedBytes = json.get("downloaded_bytes")?.asLong,
-                                totalBytes = json.get("total_bytes")?.asLong,
-                                eta = json.get("eta")?.asInt,
-                                speed = json.get("speed")?.asDouble,
-                                message = json.get("message")?.asString
-                            ))
-                        }
-                        "done" -> {
-                            eventChannel.trySend(DownloadEvent.Done(
-                                title = json.get("title")?.asString,
-                                filename = json.get("filename")?.asString ?: "",
-                                downloadUrl = json.get("download_url")?.asString ?: ""
-                            ))
-                        }
-                        "error" -> {
-                            eventChannel.trySend(DownloadEvent.Error(
-                                error = json.get("error")?.asString ?: "Unknown error"
-                            ))
-                        }
+                    val json = JsonParser.parseString(data).asJsonObject
+
+                    val status = json.get("status")?.asString ?: "unknown"
+                    val progress = json.get("progress")?.asInt ?: 0
+                    val downloaded = json.get("downloaded_bytes")?.asLong ?: 0L
+                    val total = json.get("total_bytes")?.asLong ?: 0L
+                    val speed = json.get("speed")?.asString ?: ""
+
+                    when (status) {
+                        "done" -> channel.trySend(SSEEvent.Done(json))
+                        "error" -> channel.trySend(SSEEvent.Error(json))
+                        else -> channel.trySend(
+                            SSEEvent.Progress(
+                                progress = progress,
+                                downloadedBytes = downloaded,
+                                totalBytes = total,
+                                speed = speed
+                            )
+                        )
                     }
                 } catch (e: Exception) {
-                    Log.e("SSEManager", "❌ Parse error: ${e.message}")
-                    eventChannel.trySend(DownloadEvent.Error(e.message ?: "Parse error"))
+                    Log.e("SSEManager", "Error parsing SSE data", e)
+                    channel.trySend(SSEEvent.Error(null))
                 }
             }
-            
+
             override fun onClosed(eventSource: EventSource) {
-                Log.d("SSEManager", "🔌 SSE Closed")
+                Log.d("SSEManager", "SSE connection closed")
+                channel.trySend(SSEEvent.Closed)
+                channel.close()
             }
-            
-            override fun onFailure(
-                eventSource: EventSource,
-                t: Throwable?,
-                response: Response?
-            ) {
-                Log.e("SSEManager", "❌ SSE Failed: ${t?.message}")
-                eventChannel.trySend(DownloadEvent.Error(t?.message ?: "Connection failed"))
+
+            override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+                Log.e("SSEManager", "SSE connection error", t)
+                channel.trySend(SSEEvent.Error(null))
+                channel.close()
             }
-        }
-        
-        eventSource = EventSources.createFactory(client).newEventSource(request, listener)
-        
-        return eventChannel.receiveAsFlow()
+        })
+
+        return channel.receiveAsFlow()
     }
-    
+
     fun close() {
         eventSource?.cancel()
-        eventSource = null
-        eventChannel.close()
     }
-    
-    companion object {
-        private const val TAG = "SSEManager"
-    }
+}
+
+sealed class SSEEvent {
+    data class Progress(val progress: Int, val downloadedBytes: Long, val totalBytes: Long, val speed: String) : SSEEvent()
+    data class Done(val data: com.google.gson.JsonObject?) : SSEEvent()
+    data class Error(val data: com.google.gson.JsonObject?) : SSEEvent()
+    object Connected : SSEEvent()
+    object Closed : SSEEvent()
 }
