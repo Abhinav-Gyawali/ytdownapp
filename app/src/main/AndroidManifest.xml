@@ -40,10 +40,14 @@
             </intent-filter>
         </activity>
 
-        <!-- Downloads Activity -->
         <activity
             android:name=".DownloadsActivity"
             android:label="@string/title_downloads" />
+
+        <!-- Server Files Activity -->
+        <activity
+            android:name=".ui.activities.ServerFilesActivity"
+            android:label="Server Files" />
 
         <!-- Settings Activity -->
         <activity
