@@ -1,11 +1,17 @@
 package com.mvdown.ui.activities
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.airbnb.lottie.LottieAnimationView
 import com.mvdown.MainActivity
@@ -20,12 +26,29 @@ class SplashActivity : AppCompatActivity() {
     private lateinit var tvStatus: TextView
     private lateinit var btnRetry: Button
 
+    // Register a permission launcher (modern API)
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                checkServerHealth()
+            } else {
+                Toast.makeText(
+                    this,
+                    "Storage permission is required to load downloads",
+                    Toast.LENGTH_LONG
+                ).show()
+                btnRetry.visibility = View.VISIBLE
+                tvStatus.text = "Permission denied"
+                animationView.pauseAnimation()
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
         initViews()
-        checkServerHealth()
+        checkAndRequestPermission()
     }
 
     private fun initViews() {
@@ -35,7 +58,30 @@ class SplashActivity : AppCompatActivity() {
 
         btnRetry.setOnClickListener {
             btnRetry.visibility = View.GONE
-            checkServerHealth()
+            checkAndRequestPermission()
+        }
+    }
+
+    // ✅ Ask for runtime permission here
+    private fun checkAndRequestPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ uses READ_MEDIA_* instead of READ_EXTERNAL_STORAGE
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO)
+                == PackageManager.PERMISSION_GRANTED
+            ) {
+                checkServerHealth()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_VIDEO)
+            }
+        } else {
+            // For Android 12 and below
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED
+            ) {
+                checkServerHealth()
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
     }
 
@@ -46,10 +92,9 @@ class SplashActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val response = ApiClient.service.healthCheck()
-                
+
                 if (response.isSuccessful) {
                     tvStatus.text = "Server is ready!"
-                    // Add a small delay to show the success message
                     delay(800)
                     proceedToMain()
                 } else {
