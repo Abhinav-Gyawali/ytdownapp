@@ -12,6 +12,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.mvdown.api.ApiClient
 import com.mvdown.models.FormatRequest
+import com.mvdown.ui.activities.ServerFilesActivity
 import com.mvdown.ui.bottom_sheets.FormatBottomSheet
 import kotlinx.coroutines.launch
 
@@ -21,6 +22,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etUrl: TextInputEditText
     private lateinit var btnFetchFormats: MaterialButton
     private lateinit var btnDownloads: MaterialButton
+    private lateinit var btnServerFiles: MaterialButton
     private var isProcessing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         etUrl = findViewById(R.id.etUrl)
         btnFetchFormats = findViewById(R.id.btnFetchFormats)
         btnDownloads = findViewById(R.id.btnDownloads)
+        btnServerFiles = findViewById(R.id.btnServerFiles)
     }
     
     private fun setupToolbar() {
@@ -69,6 +72,14 @@ class MainActivity : AppCompatActivity() {
         btnDownloads.setOnClickListener {
             if (!isProcessing) {
                 val intent = Intent(this, DownloadsActivity::class.java)
+                startActivity(intent)
+                overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+            }
+        }
+
+        btnServerFiles.setOnClickListener {
+            if (!isProcessing) {
+                val intent = Intent(this, ServerFilesActivity::class.java)
                 startActivity(intent)
                 overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
             }
@@ -128,6 +139,7 @@ class MainActivity : AppCompatActivity() {
         isProcessing = processing
         btnFetchFormats.isEnabled = !processing
         btnDownloads.isEnabled = !processing
+        btnServerFiles.isEnabled = !processing
         
         if (processing) {
             btnFetchFormats.text = "Processing..."
@@ -145,5 +157,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.urlInputLayout).startAnimation(slideUp)
         btnFetchFormats.startAnimation(fadeIn)
         btnDownloads.startAnimation(fadeIn)
+        btnServerFiles.startAnimation(fadeIn)
     }
 }
