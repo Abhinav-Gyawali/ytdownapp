@@ -11,6 +11,8 @@ import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 import java.io.IOException
 
+import com.mvdown.api.ApiClient
+
 class SSEManager {
 
     private val client = OkHttpClient.Builder()
