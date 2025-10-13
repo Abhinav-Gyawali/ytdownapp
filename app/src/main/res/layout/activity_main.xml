@@ -113,6 +113,37 @@
                 app:icon="@drawable/ic_search"
                 style="@style/Widget.Material3.Button" />
 
+
+            <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_marginBottom="8dp"
+    android:weightSum="2"
+    android:gravity="center"
+    android:layout_marginTop="4dp">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDownloadBestAudio"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Download Best Audio"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_marginEnd="4dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDownloadBestVideo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Download Best Video"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_marginStart="4dp"/>
+
+</LinearLayout>
+
+            
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDownloads"
                 android:layout_width="match_parent"
