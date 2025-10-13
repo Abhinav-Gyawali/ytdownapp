@@ -134,7 +134,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-    
+
+    private fun downloadAudio(url : String){
+        setProcessingState(true)
+        val request = DownloadRequest(url)
+        val response = ApiClient.service.downloadBestAudio(request)
+
+        if (response.isSuccessful && response.body != null){
+            
+        }
+    }
+
+    private fun downloadVideo(){}
     private fun setProcessingState(processing: Boolean) {
         isProcessing = processing
         btnFetchFormats.isEnabled = !processing
