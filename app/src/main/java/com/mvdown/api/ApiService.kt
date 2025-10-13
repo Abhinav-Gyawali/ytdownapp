@@ -22,6 +22,12 @@ interface ApiService {
     
     @DELETE("api/files/{filename}")
     suspend fun deleteFile(@Path("filename") filename: String): Response<Unit>
+
+    @GET("api/download/best/audio/{url}")
+    suspend fun downloadBestAudio(): Response<DownloadResponse>
+
+    @GET("api/download/best/video/{url}")
+    suspend fun downloadBestVideo(): Response<DownloadResponse>
     
     @Streaming
     @GET("downloads/{filename}")
