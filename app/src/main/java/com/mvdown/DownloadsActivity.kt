@@ -9,6 +9,8 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.mvdown.adapters.DownloadedFileAdapter
 import com.mvdown.models.DownloadedFile
 import java.io.File
+import android.content.ContentUris
+import android.provider.MediaStore
 
 class DownloadsActivity : AppCompatActivity() {
     
