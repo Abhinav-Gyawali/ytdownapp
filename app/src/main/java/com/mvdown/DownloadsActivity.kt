@@ -47,26 +47,45 @@ class DownloadsActivity : AppCompatActivity() {
     }
     
     private fun loadDownloads() {
-    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val files = downloadsDir?.listFiles()
+    val downloads = mutableListOf<DownloadedFile>()
 
-    if (files.isNullOrEmpty()) {
-        Toast.makeText(this, "No downloads found", Toast.LENGTH_SHORT).show()
-        adapter.updateDownloads(emptyList())
-        return
+    val projection = arrayOf(
+        MediaStore.Downloads._ID,
+        MediaStore.Downloads.DISPLAY_NAME,
+        MediaStore.Downloads.SIZE,
+        MediaStore.Downloads.DATE_ADDED
+    )
+
+    val query = contentResolver.query(
+        MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+        projection,
+        null,
+        null,
+        MediaStore.Downloads.DATE_ADDED + " DESC"
+    )
+
+    query?.use { cursor ->
+        val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Downloads.DISPLAY_NAME)
+        val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Downloads.SIZE)
+        val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Downloads.DATE_ADDED)
+        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID)
+
+        while (cursor.moveToNext()) {
+            val id = cursor.getLong(idColumn)
+            val uri = ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+            downloads.add(
+                DownloadedFile(
+                    title = cursor.getString(nameColumn),
+                    filePath = uri.toString(),
+                    downloadDate = cursor.getLong(dateColumn) * 1000, // Convert seconds to ms
+                    size = cursor.getLong(sizeColumn)
+                )
+            )
+        }
     }
 
-    val downloadedFiles = files.filter { it.isFile }.map { file ->
-        DownloadedFile(
-            title = file.name,
-            filePath = file.absolutePath,
-            downloadDate = file.lastModified(),
-            size = file.length()
-        )
+    adapter.updateDownloads(downloads)
     }
-
-    adapter.updateDownloads(downloadedFiles)
-}
     
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
