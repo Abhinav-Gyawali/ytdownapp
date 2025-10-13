@@ -26,56 +26,38 @@ class DownloadManager(private val context: Context) {
     }
     
     fun startDownload(url: String, formatId: String, scope: CoroutineScope) {
-        // Send initial "processing" event
-        _downloadEvent.postValue(
-            DownloadEvent.Progress(
-                status = "starting",
-                message = "Initiating download..."
-            )
-        )
-        
-        scope.launch(Dispatchers.IO) {
-            try {
-                // Step 1: Initiate download and get download_id
-                val request = DownloadRequest(url, formatId)
-                val response = ApiClient.service.initiateDownload(request)
-                
-                Log.d(TAG, "Response code: ${response.code()}")
-                Log.d(TAG, "Response body: ${response.body()}")
-                
-                if (response.isSuccessful && response.body() != null) {
-                    val downloadResponse = response.body()!!
-                    val downloadId = downloadResponse.downloadId
-                    
-                    Log.d(TAG, "✅ Download initiated! ID: $downloadId")
-                    
-                    // Step 2: Connect SSE with the download_id
-                    sseManager = SSEManager(downloadId)
-                    sseManager?.startListening()
-                        ?.catch { error ->
-                            Log.e(TAG, "SSE error: ${error.message}", error)
-                            _downloadEvent.postValue(
-                                DownloadEvent.Error(error.message ?: "Unknown error")
-                            )
-                        }
-                        ?.collect { event ->
-                            _downloadEvent.postValue(event)
-                        }
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Unknown error"
-                    Log.e(TAG, "❌ Download initiation failed: ${response.code()} - $errorBody")
-                    _downloadEvent.postValue(
-                        DownloadEvent.Error("Failed to start download: ${response.code()} - $errorBody")
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "❌ Download error: ${e.message}", e)
-                _downloadEvent.postValue(
-                    DownloadEvent.Error(e.message ?: "Unknown error")
-                )
+    _downloadEvent.postValue(DownloadEvent.Progress("starting", "Initiating download..."))
+
+    scope.launch(Dispatchers.IO) {
+        try {
+            val request = DownloadRequest(url, formatId)
+            val response = ApiClient.service.initiateDownload(request)
+
+            if (response.isSuccessful && response.body() != null) {
+                val downloadId = response.body()!!.downloadId
+                Log.d(TAG, "Download ID: $downloadId")
+
+                // Ensure previous SSE is closed
+                disconnect()
+                sseManager = SSEManager()
+
+                sseManager?.startListening(downloadId)
+                    ?.catch { error ->
+                        Log.e(TAG, "SSE error: ${error.message}", error)
+                        _downloadEvent.postValue(DownloadEvent.Error(error.message ?: "Unknown error"))
+                    }
+                    ?.collect { event ->
+                        _downloadEvent.postValue(event)
+                    }
+            } else {
+                val errorBody = response.errorBody()?.string() ?: "Unknown error"
+                _downloadEvent.postValue(DownloadEvent.Error("Failed: ${response.code()} - $errorBody"))
             }
+        } catch (e: Exception) {
+            _downloadEvent.postValue(DownloadEvent.Error(e.message ?: "Unknown error"))
         }
     }
+}
     
     fun disconnect() {
         sseManager?.close()
