@@ -47,24 +47,26 @@ class DownloadsActivity : AppCompatActivity() {
     }
     
     private fun loadDownloads() {
-        // TODO: Implement actual downloads loading
-        val sampleDownloads = listOf(
-            DownloadedFile(
-                title = "Sample Video 1",
-                filePath = "/storage/emulated/0/Download/sample1.mp4",
-                downloadDate = System.currentTimeMillis(),
-                size = 1024 * 1024 * 50 // 50MB
-            ),
-            DownloadedFile(
-                title = "Sample Video 2",
-                filePath = "/storage/emulated/0/Download/sample2.mp4",
-                downloadDate = System.currentTimeMillis() - 86400000, // Yesterday
-                size = 1024 * 1024 * 100 // 100MB
-            )
-        )
-        
-        adapter.updateDownloads(sampleDownloads)
+    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    val files = downloadsDir?.listFiles()
+
+    if (files.isNullOrEmpty()) {
+        Toast.makeText(this, "No downloads found", Toast.LENGTH_SHORT).show()
+        adapter.updateDownloads(emptyList())
+        return
     }
+
+    val downloadedFiles = files.filter { it.isFile }.map { file ->
+        DownloadedFile(
+            title = file.name,
+            filePath = file.absolutePath,
+            downloadDate = file.lastModified(),
+            size = file.length()
+        )
+    }
+
+    adapter.updateDownloads(downloadedFiles)
+}
     
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
