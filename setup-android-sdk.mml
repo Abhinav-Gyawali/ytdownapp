@@ -1,0 +1,67 @@
+#!/bin/bash
+set -e
+
+# Define paths and versions
+ANDROID_SDK_ROOT="/opt/android-sdk"
+CMDLINE_TOOLS_VERSION="11076708_latest"  # Update with the latest if necessary
+SDK_URL="https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}.zip"
+
+# Install system dependencies
+echo "Installing system dependencies..."
+sudo apt-get update && sudo apt-get install -y \
+    wget \
+    unzip \
+    curl \
+    git \
+    zip \
+    lib32stdc++6 \
+    lib32z1 \
+    libglib2.0-0 \
+    libxcb1 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxrender1 \
+    libxtst6 \
+    libxi6
+
+# Create the SDK root directory
+echo "Setting up Android SDK at $ANDROID_SDK_ROOT..."
+mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+
+# Download Android Command Line Tools
+echo "Downloading Android command line tools..."
+cd /tmp
+wget $SDK_URL -O commandlinetools.zip
+
+# Extract and move the tools to SDK location
+echo "Extracting Android command line tools..."
+unzip commandlinetools.zip
+mv cmdline-tools "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+
+# Set the environment variables for SDK
+echo "Configuring environment variables..."
+echo "export ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> ~/.bashrc
+echo "export PATH=\$PATH:\$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:\$ANDROID_SDK_ROOT/platform-tools" >> ~/.bashrc
+source ~/.bashrc
+
+# Install SDK components via sdkmanager
+echo "Accepting SDK licenses and installing SDK components..."
+yes | sdkmanager --licenses
+
+sdkmanager "platform-tools" \
+           "platforms;android-34" \
+           "build-tools;34.0.0" \
+           "ndk;25.2.9519653" \
+           "cmake;3.22.1"
+
+# Fix permissions to avoid issues with the SDK path
+echo "Setting proper permissions for the SDK..."
+sudo chown -R $USER:$USER "$ANDROID_SDK_ROOT"
+
+# Verify the installation
+echo "Verifying Android SDK installation..."
+sdkmanager --list
+adb version
+
+echo "Android SDK setup complete!"
+  
