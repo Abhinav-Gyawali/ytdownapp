@@ -1,0 +1,13 @@
+{
+    "name": "Android Dev in Codespaces",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "./.devcontainer/setup-android.sh",
+    "features": {
+        "ghcr.io/devcontainers-contrib/features/java:1": {
+            "version": "17"
+        }
+    }
+}
