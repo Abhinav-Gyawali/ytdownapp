@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base Light Theme -->
     <style name="Base.Theme.MVDown" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/md_theme_light_primary</item>
         <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
@@ -25,7 +26,21 @@
         <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
         <item name="colorOutline">@color/md_theme_light_outline</item>
         <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
+        
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
+    <!-- Main App Theme -->
     <style name="Theme.MVDown" parent="Base.Theme.MVDown" />
+    
+    <!-- Alias for compatibility with old manifest -->
+    <style name="Theme.YTDownloader" parent="Theme.MVDown" />
+    
+    <!-- No ActionBar Theme -->
+    <style name="Theme.YTDownloader.NoActionBar" parent="Theme.MVDown">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
 </resources>
