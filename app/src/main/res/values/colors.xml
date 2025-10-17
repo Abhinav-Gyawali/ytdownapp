@@ -3,6 +3,13 @@
     <!-- Material3 Dynamic Color Seeds -->
     <color name="seed">#6750A4</color>
     
+    <!-- Legacy Colors (for compatibility) -->
+    <color name="colorPrimary">#6750A4</color>
+    <color name="colorPrimaryDark">#4F378B</color>
+    <color name="colorAccent">#D0BCFF</color>
+    <color name="grey_light">#F5F5F5</color>
+    <color name="grey_dark">#E0E0E0</color>
+    
     <!-- Light Theme Colors -->
     <color name="md_theme_light_primary">#6750A4</color>
     <color name="md_theme_light_onPrimary">#FFFFFF</color>
