@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/app_name"
+            app:titleTextAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+            app:menu="@menu/main_menu" />
+
+    
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:clipToPadding="false">
+
+            <!-- Hero Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                app:cardCornerRadius="24dp"
+                style="@style/Widget.Material3.CardView.Filled">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <com.airbnb.lottie.LottieAnimationView
+                        android:id="@+id/heroAnimation"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginBottom="16dp"
+                        app:lottie_rawRes="@raw/download_animation"
+                        app:lottie_autoPlay="true"
+                        app:lottie_loop="true" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:text="Download Videos"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:text="Paste any video URL to get started"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- URL Input Section -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/urlInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Enter Video URL"
+                app:startIconDrawable="@drawable/ic_link"
+                app:endIconMode="clear_text"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Action Buttons -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFetchFormats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fetch Formats"
+                android:layout_marginBottom="8dp"
+                app:icon="@drawable/ic_search"
+                style="@style/Widget.Material3.Button" />
+
+
+            <LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_marginBottom="8dp"
+    android:weightSum="2"
+    android:gravity="center"
+    android:layout_marginTop="4dp">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDownloadBestAudio"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Download Best Audio"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_marginEnd="4dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDownloadBestVideo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Download Best Video"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_marginStart="4dp"/>
+
+</LinearLayout>
+
+            
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDownloads"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="My Downloads"
+                android:layout_marginBottom="8dp"
+                app:icon="@drawable/ic_downloads"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnServerFiles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Server Files"
+                app:icon="@drawable/ic_video"
+                style="@style/Widget.Material3.Button.TonalButton" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
