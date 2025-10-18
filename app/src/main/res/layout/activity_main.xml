@@ -159,20 +159,70 @@
 
             </com.google.android.material.chip.ChipGroup>
 
-            <!-- Swipe Refresh -->
-            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-                android:id="@+id/swipe_refresh"
+            <!-- Content Area with SwipeRefresh and Empty State -->
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:minHeight="300dp">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recycler_view"
+                <!-- Swipe Refresh with RecyclerView -->
+                <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                    android:id="@+id/swipe_refresh"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:paddingBottom="80dp" />
+
+                </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+                <!-- Empty State -->
+                <LinearLayout
+                    android:id="@+id/empty_state"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:clipToPadding="false"
-                    android:paddingBottom="80dp" />
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="gone">
 
-            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+                    <ImageView
+                        android:id="@+id/empty_icon"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/ic_downloads"
+                        android:alpha="0.3"
+                        android:tint="?attr/colorOnSurfaceVariant" />
+
+                    <TextView
+                        android:id="@+id/empty_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="No files available"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:alpha="0.6" />
+
+                    <TextView
+                        android:id="@+id/empty_subtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Download some media to get started"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:alpha="0.5"
+                        android:gravity="center" />
+
+                </LinearLayout>
+
+            </FrameLayout>
 
         </LinearLayout>
 
