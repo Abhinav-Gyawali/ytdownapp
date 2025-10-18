@@ -60,7 +60,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)
-        supportActionBar?.title = "M/V Down"
+        supportActionBar?.apply {
+            title = "M/V Down"
+            setDisplayShowTitleEnabled(true)
+        }
+        // Set title color to white for better visibility
+        binding.toolbar.setTitleTextColor(
+            resources.getColor(android.R.color.white, theme)
+        )
     }
 
     private fun setupRecyclerViews() {
@@ -76,7 +83,9 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = fileAdapter
-            setHasFixedSize(true)
+            setHasFixedSize(false)
+            // Add item animator for smooth animations
+            itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator()
         }
     }
 
@@ -140,6 +149,7 @@ class MainActivity : AppCompatActivity() {
                 
             } catch (e: Exception) {
                 showSnackbar("Error: ${e.message}")
+                android.util.Log.e("MainActivity", "Quick download error", e)
             } finally {
                 binding.progressIndicator.hide()
             }
@@ -155,7 +165,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 binding.tvApiStatus.text = "API: Offline"
                 binding.tvCookiesStatus.text = "Cookies: Unknown"
-                showSnackbar("Cannot connect to API: ${e.message}")
+                android.util.Log.e("MainActivity", "API health check failed", e)
             }
         }
     }
@@ -164,19 +174,32 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 binding.swipeRefresh.isRefreshing = true
+                
+                android.util.Log.d("MainActivity", "Loading files from API...")
                 val files = ApiClient.apiService.getFiles()
                 
-                // Update adapter
-                fileAdapter.submitList(files)
+                android.util.Log.d("MainActivity", "Files received: ${files.size}")
+                files.forEachIndexed { index, file ->
+                    android.util.Log.d("MainActivity", "File $index: ${file.name} (${file.size} bytes, ${file.type})")
+                }
                 
-                // Show/hide empty state
+                // Show/hide empty state first
                 if (files.isEmpty()) {
+                    android.util.Log.d("MainActivity", "No files found, showing empty state")
                     showEmptyState(true)
                 } else {
+                    android.util.Log.d("MainActivity", "Files found, hiding empty state and updating adapter")
                     showEmptyState(false)
+                    
+                    // IMPORTANT: Submit list in the next frame to ensure visibility is updated
+                    binding.recyclerView.post {
+                        fileAdapter.submitList(ArrayList(files))
+                        android.util.Log.d("MainActivity", "Adapter list submitted, item count: ${fileAdapter.itemCount}")
+                    }
                 }
                 
             } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error loading files", e)
                 showSnackbar("Error loading files: ${e.message}")
                 showEmptyState(true)
                 e.printStackTrace()
@@ -187,6 +210,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showEmptyState(show: Boolean) {
+        android.util.Log.d("MainActivity", "showEmptyState: $show")
+        
         if (show) {
             binding.emptyState.visibility = View.VISIBLE
             binding.recyclerView.visibility = View.GONE
@@ -220,12 +245,13 @@ class MainActivity : AppCompatActivity() {
                 .setAllowedOverRoaming(true)
 
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val downloadId = downloadManager.enqueue(request)
+            downloadManager.enqueue(request)
 
             showSnackbar("📥 Downloading: $fileName")
             
         } catch (e: Exception) {
             showSnackbar("Download error: ${e.message}")
+            android.util.Log.e("MainActivity", "Download error", e)
         }
     }
 
@@ -241,6 +267,7 @@ class MainActivity : AppCompatActivity() {
                         loadFiles()
                     } catch (e: Exception) {
                         showSnackbar("Error: ${e.message}")
+                        android.util.Log.e("MainActivity", "Delete error", e)
                     }
                 }
             }
@@ -315,6 +342,7 @@ class MainActivity : AppCompatActivity() {
                         loadFiles()
                     } catch (e: Exception) {
                         showSnackbar("Error: ${e.message}")
+                        android.util.Log.e("MainActivity", "Delete all error", e)
                     }
                 }
             }
