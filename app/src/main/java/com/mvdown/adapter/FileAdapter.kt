@@ -1,5 +1,6 @@
 package com.mvdown.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -19,14 +20,22 @@ class FileAdapter(
             parent,
             false
         )
+        Log.d("FileAdapter", "onCreateViewHolder called")
         return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
+        Log.d("FileAdapter", "onBindViewHolder: position=$position, item=$item")
         if (item != null) {
             holder.bind(item)
         }
+    }
+
+    override fun getItemCount(): Int {
+        val count = super.getItemCount()
+        Log.d("FileAdapter", "getItemCount: $count")
+        return count
     }
 
     inner class ViewHolder(
@@ -34,15 +43,19 @@ class FileAdapter(
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(file: FileItem) {
+            Log.d("FileAdapter", "Binding file: ${file.name}")
+            
             binding.tvFileName.text = file.name
             binding.tvFileSize.text = formatFileSize(file.size)
             binding.tvFileType.text = file.type.uppercase()
 
             binding.btnDownload.setOnClickListener {
+                Log.d("FileAdapter", "Download clicked: ${file.name}")
                 onDownload(file.name)
             }
 
             binding.btnDelete.setOnClickListener {
+                Log.d("FileAdapter", "Delete clicked: ${file.name}")
                 onDelete(file.name)
             }
         }
