@@ -50,6 +50,8 @@
                     android:layout_gravity="center"
                     app:indicatorSize="120dp"
                     app:trackThickness="8dp"
+                    android:max="100"
+                    android:progress="0"
                     android:layout_marginBottom="16dp" />
 
                 <TextView
@@ -76,15 +78,28 @@
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     android:textColor="?android:attr/textColorSecondary"
-                    android:layout_gravity="center" />
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
+
+                <!-- Download File Button (appears after completion) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_download_file"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Download to Device"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_download"
+                    style="@style/Widget.Material3.Button" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_done"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
+                    android:layout_marginTop="8dp"
                     android:text="Done"
-                    android:enabled="false" />
+                    android:enabled="false"
+                    style="@style/Widget.Material3.Button.TonalButton" />
 
             </LinearLayout>
 
