@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         // File adapter
         fileAdapter = FileAdapter(
             onDownload = { file -> downloadFile(file) },
-            onDelete = { file -> deleteFile(file) }
+            onDelete = { file -> deleteServerFile(file) }
         )
         
         // Download adapter
@@ -161,14 +161,14 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun deleteFile(fileName: String) {
+    private fun deleteServerFile(fileName: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Delete File")
             .setMessage("Are you sure you want to delete $fileName?")
             .setPositiveButton("Delete") { _, _ ->
                 lifecycleScope.launch {
                     try {
-                        ApiClient.apiService.deleteFile(fileName)
+                        ApiClient.apiService.deleteServerFile(fileName)
                         showSnackbar("File deleted")
                         loadFiles()
                     } catch (e: Exception) {

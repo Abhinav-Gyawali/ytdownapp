@@ -15,7 +15,7 @@ interface ApiService {
     suspend fun getFiles(): List<FileItem>
     
     @DELETE("/api/files/{filename}")
-    suspend fun deleteFile(@Path("filename") filename: String): DeleteResponse
+    suspend fun deleteServerFile(@Path("filename") filename: String): DeleteResponse
     
     @DELETE("/api/files")
     suspend fun deleteAllFiles(): DeleteAllResponse
