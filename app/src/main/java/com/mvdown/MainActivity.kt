@@ -1,7 +1,11 @@
 package com.mvdown
 
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
@@ -24,7 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var preferenceManager: PreferenceManager
     private lateinit var fileAdapter: FileAdapter
     private lateinit var downloadAdapter: DownloadAdapter
-    private var isShowingDownloads = true
+    private var isShowingFiles = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +49,14 @@ class MainActivity : AppCompatActivity() {
         loadFiles()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh files when returning to activity
+        if (isShowingFiles) {
+            loadFiles()
+        }
+    }
+
     private fun setupToolbar() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.title = "M/V Down"
@@ -53,7 +65,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerViews() {
         // File adapter
         fileAdapter = FileAdapter(
-            onDownload = { file -> downloadFile(file) },
+            onDownload = { file -> downloadFileToDevice(file) },
             onDelete = { file -> deleteServerFile(file) }
         )
         
@@ -88,10 +100,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.swipeRefresh.setOnRefreshListener {
-            if (isShowingDownloads) {
+            if (isShowingFiles) {
                 loadFiles()
             } else {
-                loadFiles()
+                // Load active downloads
+                binding.swipeRefresh.isRefreshing = false
             }
         }
     }
@@ -116,9 +129,12 @@ class MainActivity : AppCompatActivity() {
                     DownloadRequest(url, formatId)
                 )
                 
-                showSnackbar("Download started: ${response.downloadId}")
-                // Navigate to downloads tab
-                showDownloads()
+                showSnackbar("Download started!")
+                
+                // Navigate to progress activity
+                val intent = Intent(this@MainActivity, ProgressActivity::class.java)
+                intent.putExtra("download_id", response.downloadId)
+                startActivity(intent)
                 
             } catch (e: Exception) {
                 showSnackbar("Error: ${e.message}")
@@ -136,7 +152,8 @@ class MainActivity : AppCompatActivity() {
                 binding.tvCookiesStatus.text = "Cookies: ${health.cookies}"
             } catch (e: Exception) {
                 binding.tvApiStatus.text = "API: Offline"
-                showSnackbar("Cannot connect to API")
+                binding.tvCookiesStatus.text = "Cookies: Unknown"
+                showSnackbar("Cannot connect to API: ${e.message}")
             }
         }
     }
@@ -144,32 +161,53 @@ class MainActivity : AppCompatActivity() {
     private fun loadFiles() {
         lifecycleScope.launch {
             try {
+                binding.swipeRefresh.isRefreshing = true
                 val files = ApiClient.apiService.getFiles()
                 fileAdapter.submitList(files)
-                binding.swipeRefresh.isRefreshing = false
+                
+                if (files.isEmpty()) {
+                    showSnackbar("No files available on server")
+                }
             } catch (e: Exception) {
                 showSnackbar("Error loading files: ${e.message}")
+                e.printStackTrace()
+            } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
         }
     }
 
-    private fun downloadFile(fileName: String) {
-        val url = "${ApiClient.BASE_URL}/downloads/$fileName"
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.setDataAndType(android.net.Uri.parse(url), "*/*")
-        startActivity(intent)
+    private fun downloadFileToDevice(fileName: String) {
+        try {
+            val url = "${ApiClient.BASE_URL}/downloads/${Uri.encode(fileName)}"
+            
+            val request = DownloadManager.Request(Uri.parse(url))
+                .setTitle(fileName)
+                .setDescription("Downloading from M/V Down")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+
+            val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val downloadId = downloadManager.enqueue(request)
+
+            showSnackbar("ðŸ“¥ Downloading: $fileName")
+            
+        } catch (e: Exception) {
+            showSnackbar("Download error: ${e.message}")
+        }
     }
 
     private fun deleteServerFile(fileName: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Delete File")
-            .setMessage("Are you sure you want to delete $fileName?")
+            .setMessage("Delete $fileName from server?")
             .setPositiveButton("Delete") { _, _ ->
                 lifecycleScope.launch {
                     try {
                         ApiClient.apiService.deleteServerFile(fileName)
-                        showSnackbar("File deleted")
+                        showSnackbar("File deleted from server")
                         loadFiles()
                     } catch (e: Exception) {
                         showSnackbar("Error: ${e.message}")
@@ -181,7 +219,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showFiles() {
-        isShowingDownloads = false
+        isShowingFiles = true
         binding.recyclerView.adapter = fileAdapter
         binding.chipFiles.isChecked = true
         binding.chipDownloads.isChecked = false
@@ -189,7 +227,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showDownloads() {
-        isShowingDownloads = true
+        isShowingFiles = false
         binding.recyclerView.adapter = downloadAdapter
         binding.chipFiles.isChecked = false
         binding.chipDownloads.isChecked = true
@@ -237,7 +275,7 @@ class MainActivity : AppCompatActivity() {
     private fun deleteAllFiles() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Delete All Files")
-            .setMessage("This will delete all downloaded files. Continue?")
+            .setMessage("Delete all files from server?")
             .setPositiveButton("Delete All") { _, _ ->
                 lifecycleScope.launch {
                     try {
