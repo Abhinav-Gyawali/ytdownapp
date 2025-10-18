@@ -1,13 +1,19 @@
 package com.mvdown
 
 import android.app.DownloadManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.mvdown.databinding.ActivityProgressBinding
@@ -19,9 +25,18 @@ class ProgressActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityProgressBinding
     private lateinit var sseClient: SseClient
+    private lateinit var notificationManager: NotificationManager
     private var downloadId: String? = null
     private var downloadedFileName: String? = null
     private var downloadUrl: String? = null
+    private var isActivityVisible = true
+    private var lastProgress = 0
+    private var lastStatus = ""
+
+    companion object {
+        private const val CHANNEL_ID = "mvdown_progress"
+        private const val NOTIFICATION_ID = 1001
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,10 +45,23 @@ class ProgressActivity : AppCompatActivity() {
 
         setupToolbar()
         setupListeners()
+        createNotificationChannel()
+        requestNotificationPermission()
+        
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
         downloadId = intent.getStringExtra("download_id")
         if (downloadId != null) {
             connectToProgress(downloadId!!)
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) 
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 100)
+            }
         }
     }
 
@@ -52,6 +80,22 @@ class ProgressActivity : AppCompatActivity() {
             downloadedFileName?.let { fileName ->
                 downloadFileToDevice(fileName)
             }
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Download Progress",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows download progress"
+                setShowBadge(false)
+            }
+            
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
@@ -87,6 +131,9 @@ class ProgressActivity : AppCompatActivity() {
             val message = progress["message"] as? String ?: ""
             val speed = progress["speed"] as? String
 
+            lastProgress = progressValue
+            lastStatus = message
+
             // Update UI
             binding.progressBar.progress = progressValue
             binding.progressBar.max = 100
@@ -99,7 +146,7 @@ class ProgressActivity : AppCompatActivity() {
                 
                 val eta = progress["eta"]
                 if (eta != null) {
-                    binding.tvSpeed.text = "$speed â€¢ ETA: ${eta}s"
+                    binding.tvSpeed.text = "$speed • ETA: ${eta}s"
                 }
             } else {
                 binding.tvSpeed.visibility = View.GONE
@@ -109,7 +156,7 @@ class ProgressActivity : AppCompatActivity() {
                 "completed" -> {
                     binding.progressBar.progress = 100
                     binding.tvProgress.text = "100%"
-                    binding.tvStatus.text = "Download completed!"
+                    binding.tvStatus.text = "Processing completed!"
                     
                     downloadedFileName = progress["filename"] as? String
                     downloadUrl = progress["download_url"] as? String
@@ -119,27 +166,117 @@ class ProgressActivity : AppCompatActivity() {
                     binding.btnDownloadFile.isEnabled = true
                     binding.btnDone.isEnabled = true
                     
-                    showSnackbar("âœ… Download completed: $downloadedFileName")
+                    // Show completion notification
+                    showCompletionNotification(downloadedFileName)
+                    
+                    showSnackbar("✅ Processing completed: $downloadedFileName")
                 }
                 "error" -> {
                     val error = progress["error"] as? String ?: "Unknown error"
                     binding.tvStatus.text = "Error: $error"
                     binding.tvSpeed.visibility = View.GONE
                     binding.btnDone.isEnabled = true
-                    showSnackbar("âŒ Error: $error")
+                    
+                    // Show error notification
+                    showErrorNotification(error)
+                    
+                    showSnackbar("❌ Error: $error")
                 }
                 "downloading" -> {
-                    // Progress is being downloaded
+                    // Update notification when activity is not visible
+                    if (!isActivityVisible) {
+                        showProgressNotification(progressValue, message, speed)
+                    }
                 }
                 "processing" -> {
                     binding.tvStatus.text = message
                     binding.tvSpeed.visibility = View.GONE
+                    
+                    // Update notification when activity is not visible
+                    if (!isActivityVisible) {
+                        showProgressNotification(progressValue, message, null)
+                    }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
             showSnackbar("Error parsing progress: ${e.message}")
         }
+    }
+
+    private fun showProgressNotification(progress: Int, status: String, speed: String?) {
+        val intent = Intent(this, ProgressActivity::class.java).apply {
+            putExtra("download_id", downloadId)
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val contentText = if (speed != null) {
+            "$status • $speed"
+        } else {
+            status
+        }
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Processing Media ($progress%)")
+            .setContentText(contentText)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setProgress(100, progress, false)
+            .setOngoing(true)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(false)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun showCompletionNotification(fileName: String?) {
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Processing Complete")
+            .setContentText(fileName ?: "Media file ready")
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun showErrorNotification(error: String) {
+        val intent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Processing Failed")
+            .setContentText(error)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
     private fun downloadFileToDevice(fileName: String) {
@@ -157,7 +294,7 @@ class ProgressActivity : AppCompatActivity() {
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             downloadManager.enqueue(request)
 
-            showSnackbar("ðŸ“¥ Download started: $fileName")
+            showSnackbar("📥 Download started: $fileName")
             
             // Optional: Navigate back after starting download
             binding.btnDone.postDelayed({
@@ -173,6 +310,22 @@ class ProgressActivity : AppCompatActivity() {
         Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
     }
 
+    override fun onResume() {
+        super.onResume()
+        isActivityVisible = true
+        // Cancel notification when activity is visible
+        notificationManager.cancel(NOTIFICATION_ID)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isActivityVisible = false
+        // Show notification with current progress when activity goes to background
+        if (lastProgress < 100 && lastStatus.isNotEmpty()) {
+            showProgressNotification(lastProgress, lastStatus, null)
+        }
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
@@ -185,6 +338,10 @@ class ProgressActivity : AppCompatActivity() {
         super.onDestroy()
         if (::sseClient.isInitialized) {
             sseClient.disconnect()
+        }
+        // Clean up notification if download is complete
+        if (lastProgress >= 100) {
+            notificationManager.cancel(NOTIFICATION_ID)
         }
     }
 }
