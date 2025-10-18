@@ -23,7 +23,10 @@ class FileAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val item = getItem(position)
+        if (item != null) {
+            holder.bind(item)
+        }
     }
 
     inner class ViewHolder(
@@ -45,6 +48,8 @@ class FileAdapter(
         }
 
         private fun formatFileSize(bytes: Long): String {
+            if (bytes <= 0) return "0 B"
+            
             val units = arrayOf("B", "KB", "MB", "GB")
             var size = bytes.toDouble()
             var unitIndex = 0
