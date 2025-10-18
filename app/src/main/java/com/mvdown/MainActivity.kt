@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
@@ -75,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = fileAdapter
+            setHasFixedSize(true)
         }
     }
 
@@ -163,17 +165,45 @@ class MainActivity : AppCompatActivity() {
             try {
                 binding.swipeRefresh.isRefreshing = true
                 val files = ApiClient.apiService.getFiles()
+                
+                // Update adapter
                 fileAdapter.submitList(files)
                 
+                // Show/hide empty state
                 if (files.isEmpty()) {
-                    showSnackbar("No files available on server")
+                    showEmptyState(true)
+                } else {
+                    showEmptyState(false)
                 }
+                
             } catch (e: Exception) {
                 showSnackbar("Error loading files: ${e.message}")
+                showEmptyState(true)
                 e.printStackTrace()
             } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
+        }
+    }
+
+    private fun showEmptyState(show: Boolean) {
+        if (show) {
+            binding.emptyState.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.GONE
+            
+            // Update empty state based on current tab
+            if (isShowingFiles) {
+                binding.emptyIcon.setImageResource(android.R.drawable.ic_menu_gallery)
+                binding.emptyText.text = "No files available"
+                binding.emptySubtitle.text = "Download some media to get started"
+            } else {
+                binding.emptyIcon.setImageResource(android.R.drawable.stat_sys_download)
+                binding.emptyText.text = "No active downloads"
+                binding.emptySubtitle.text = "Start a download to see progress here"
+            }
+        } else {
+            binding.emptyState.visibility = View.GONE
+            binding.recyclerView.visibility = View.VISIBLE
         }
     }
 
@@ -192,7 +222,7 @@ class MainActivity : AppCompatActivity() {
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val downloadId = downloadManager.enqueue(request)
 
-            showSnackbar("ðŸ“¥ Downloading: $fileName")
+            showSnackbar("📥 Downloading: $fileName")
             
         } catch (e: Exception) {
             showSnackbar("Download error: ${e.message}")
@@ -231,6 +261,7 @@ class MainActivity : AppCompatActivity() {
         binding.recyclerView.adapter = downloadAdapter
         binding.chipFiles.isChecked = false
         binding.chipDownloads.isChecked = true
+        showEmptyState(true) // Show empty state for now
     }
 
     private fun showSnackbar(message: String) {
